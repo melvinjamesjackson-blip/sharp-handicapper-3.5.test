@@ -1,0 +1,28 @@
+name: Update 2026 NFL opponent-adjusted EPA research
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '20 12 * * 2,4'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pandas pyarrow numpy
+      - name: Build opponent-adjusted research feed
+        run: python scripts/build_2026_epa_adjusted.py
+      - name: Commit research JSON if changed
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/nfl_epa_2026_adjusted.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update 2026 opponent-adjusted EPA research feed'
+            git push
+          fi
