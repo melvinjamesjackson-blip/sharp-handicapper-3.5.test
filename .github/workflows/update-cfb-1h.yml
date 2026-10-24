@@ -1,0 +1,28 @@
+name: Update CFB first-half history
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '35 12 * * 2,6'
+permissions:
+  contents: write
+jobs:
+  build-cfb-1h:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build verified CFB quarter-score history
+        run: python scripts/build_cfb_1h.py --start-year 2024 --end-year 2026
+      - name: Commit research data if changed
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/cfb_1h_history.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update automatic CFB 1H quarter-score research data'
+            git push
+          fi
