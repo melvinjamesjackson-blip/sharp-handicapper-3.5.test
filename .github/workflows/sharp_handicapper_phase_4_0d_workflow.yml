@@ -1,0 +1,35 @@
+name: NFL injury feed audit (testing)
+on:
+  workflow_dispatch:
+  # Enable scheduling only after first manual run and source review.
+  # schedule:
+  #   - cron: '23 */6 * * *'
+permissions:
+  contents: write
+concurrency:
+  group: nfl-injury-feed-testing
+  cancel-in-progress: false
+jobs:
+  refresh:
+    if: github.ref_name == 'testing'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: testing
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fetch and validate NFL injury report
+        run: python scripts/update_nfl_injuries.py
+      - name: Commit only when data changes
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add data/nfl_injuries.json
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update testing NFL injury feed snapshot'
+            git push origin HEAD:testing
+          fi
