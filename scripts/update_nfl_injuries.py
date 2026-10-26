@@ -52,6 +52,18 @@ def main():
                             'timestamp_meaning':'retrieved_at; original per-player report time not verified',
                             'player_id':str(athlete.get('id') or ''),
                             'source':'ESPN unofficial site endpoint'})
+    print(f"ESPN groups received: {len(groups)}", flush=True)
+    print(f"Valid players: {len(records)}", flush=True)
+    print(f"Malformed entries: {bad}", flush=True)
+    print(f"Teams found: {sorted({r['team'] for r in records})}", flush=True)
+    for group in groups[:2]:
+        if isinstance(group, dict):
+            print(f"Group keys: {list(group.keys())}", flush=True)
+            print(f"Team: {str(group.get('team'))[:300]}", flush=True)
+            entries = group.get('injuries')
+            print(f"Entries type: {type(entries).__name__}", flush=True)
+            if isinstance(entries, list) and entries:
+                print(f"First entry: {str(entries[0])[:800]}", flush=True)     
     # Reject suspiciously incomplete data, rather than publish an empty/partial snapshot.
     if len(records)<20 or len({r['team'] for r in records})<8:
         raise RuntimeError(f'Only {len(records)} player records across {len({r["team"] for r in records})} teams; old file retained')
