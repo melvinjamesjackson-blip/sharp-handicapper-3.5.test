@@ -1,35 +1,51 @@
-name: NFL injury feed audit (testing)
+name: NFL injury feed audit (main)
+
 on:
   workflow_dispatch:
-  # Enable scheduling only after first manual run and source review.
+
+  # Enable scheduling after manual verification.
   # schedule:
   #   - cron: '23 */6 * * *'
+
 permissions:
   contents: write
+
 concurrency:
-  group: nfl-injury-feed-testing
+  group: nfl-injury-feed-main
   cancel-in-progress: false
+
 jobs:
-  refresh:
-    if: github.ref_name == 'testing'
+  update-injuries:
+    if: github.ref_name == 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout main branch
+        uses: actions/checkout@v4
         with:
-          ref: testing
+          ref: main
           persist-credentials: true
-      - uses: actions/setup-python@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Fetch and validate NFL injury report
+
+      - name: Update NFL injury feed
         run: python scripts/update_nfl_injuries.py
-      - name: Commit only when data changes
+
+      - name: Commit updated injury data
         run: |
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add data/nfl_injuries.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'Update testing NFL injury feed snapshot'
-            git push origin HEAD:testing
+
+          if git diff --cached --quiet; then
+            echo "No injury data changes."
+          else
+            git commit -m "Update NFL injury feed snapshot"
+            git push origin HEAD:main
           fi
+
